@@ -1,14 +1,18 @@
+
+# 🛠 IDX Technical Manual & Extension Guide
+
 This documentation is designed for developers who want to perform deep modifications, extend functionality, or transform the architecture of the **IDX Academic Support Hub**.
 
 ---
 
-# 🛠 IDX Technical Manual & Extension Guide
-
 ## 1. Core Architecture Overview
-The application follows a **Data-View Separation** pattern.
-*   **Data Layer (`src/data/guides.ts`):** A static "database" exported as a TypeScript array.
-*   **Logic Layer (`src/App.vue` <script>):** Handles state management (search, filtering, navigation).
-*   **Presentation Layer (`src/App.vue` <template> & `src/assets/style.css`):** Handles the Glassmorphism UI and animations.
+The application follows a strict **Data-View Separation** pattern to ensure the UI remains clean while content can be updated independently.
+
+*   **Data Layer (`src/data/`):** 
+    *   `guides.ts`: Registry for local PDF resources.
+    *   `links.ts`: Registry for external web tools (Toolbox).
+*   **Logic Layer (`src/App.vue` <script>):** Manages state for search, subject filtering, and cross-page navigation (`currentView`).
+*   **Presentation Layer (`src/App.vue` <template> & `src/assets/style.css`):** Implements the Glassmorphism design system and CSS animations.
 
 ---
 
@@ -21,12 +25,12 @@ The filtering engine is located in the `filteredGuides` computed property in `Ap
     2.  Update the `filteredGuides` computed function to include:
         ```typescript
         const levelMatch = activeLevel.value === 'All' || g.level === activeLevel.value;
-        return matchSub && matchSearch && levelMatch;
+        return sMatch && qMatch && levelMatch;
         ```
 
 ### B. Modifying the Search Engine
-The search currently checks guide names. To make it "Deep Search" (checking subjects and levels too):
-*   Locate `matchSearch` in `App.vue` and change to:
+The search currently checks guide names. To enable "Deep Search" (checking subjects and levels too):
+*   Locate the `qMatch` logic in `App.vue` and update it:
     ```typescript
     const searchStr = query.value.toLowerCase();
     const qMatch = g.name.toLowerCase().includes(searchStr) || 
@@ -36,64 +40,54 @@ The search currently checks guide names. To make it "Deep Search" (checking subj
 
 ---
 
-## 3. Adding New Pages (Dynamic Routing)
-Since this is a Single Page Application (SPA), you can add "pages" without a complex router by using a **Navigation State**.
+## 3. Adding New Pages (View Management)
+This project uses **Conditional Rendering** instead of a heavy router library to maintain its ultra-fast speed.
 
-### Example: Adding a "Seterra Games" Page
-To insert a new section that loads an iframe game:
+### Example: Adding an "About" or "Games" Page
+To insert a new section (like the "Toolbox" or a Settera integration):
 
-**1. Define the View State:**
-In `App.vue` `<script setup>`:
+**1. Update the View State:**
+In `App.vue` `<script setup>`, the `currentView` ref controls which page is visible:
 ```typescript
-const currentView = ref('hub'); // 'hub' or 'games'
+const currentView = ref('hub'); // Options: 'hub', 'toolbox', 'games'
 ```
 
 **2. Update the Template:**
-Wrap your existing Hub code in a conditional, and add the new "Page":
+Use `v-if` to define the new section:
 ```html
-<!-- App.vue Template -->
-<main v-if="currentView === 'hub'" class="content-container">
-   <!-- Existing Grade Sections -->
-</main>
-
-<section v-if="currentView === 'games'" class="content-container">
-   <h1 class="title-gradient">Seterra Geography Challenges</h1>
+<main v-if="currentView === 'games'" class="content-container">
+   <h1 class="title-gradient">Interactive Challenges</h1>
    <div class="glass-card" style="height: 80vh;">
-      <iframe 
-        src="https://www.seterra.com/online-game-embed-link" 
-        width="100%" height="100%" frameborder="0">
-      </iframe>
+      <iframe src="https://www.seterra.com/..." width="100%" height="100%"></iframe>
    </div>
-</section>
+</main>
 ```
 
-**3. Add a Navigation Link:**
-In the `<header>`, add a button to switch the view:
+**3. Link the Navigation:**
+Add a button in the `<header>`:
 ```html
-<button @click="currentView = 'games'" class="filter-chip">Play Seterra</button>
-<button @click="currentView = 'hub'" class="filter-chip">Study Guides</button>
+<button @click="currentView = 'games'" class="download-link">Games</button>
 ```
 
 ---
 
 ## 4. Where to Insert New Functions
-Depending on the function type, use these locations:
 
 ### A. UI Helper Functions
-If you need a function to format text (e.g., making subjects uppercase), put it inside the `<script setup>` of `App.vue`:
+Place these inside the `<script setup>` of `App.vue` for shared logic:
 ```typescript
-const formatSubject = (text: string) => text.toUpperCase();
+const formatBadge = (text: string) => text.toUpperCase();
 ```
 
-### B. External API Calls
-If you want to load data from a live Google Sheet or an API instead of `guides.ts`, insert an `onMounted` hook:
+### B. External API / Data Fetching
+If you want to move from static files to a live database (e.g., Firebase or a custom API), use the `onMounted` lifecycle hook:
 ```typescript
 import { onMounted } from 'vue';
 
 onMounted(async () => {
-  const response = await fetch('YOUR_API_ENDPOINT');
+  const response = await fetch('https://api.yoursite.com/guides');
   const data = await response.json();
-  guideData.value = data; // Note: you must change guideData to a ref()
+  // Update your local refs here
 });
 ```
 
@@ -102,19 +96,20 @@ onMounted(async () => {
 ## 5. Styling & Visual Customization (`src/assets/style.css`)
 
 ### A. Customizing the "Glass" Effect
-The Glassmorphism is controlled by three variables. Modify these to change the "vibe":
-*   `backdrop-filter: blur(12px);` → Increase for more "frost," decrease for more transparency.
-*   `background: rgba(255, 255, 255, 0.03);` → Change the `0.03` to a higher number to make cards more visible.
+The Glassmorphism is controlled by the `backdrop-filter` and `background` properties. 
+*   Modify `.glass-card` for card transparency.
+*   Modify `header` for the blurred navigation bar.
 
-### B. Changing the Color Theme
-Find `:root` and change the HSL/Hex values:
-*   `--primary`: Currently blue. Change to `#ff4757` for a red theme or `#2ed573` for green.
-*   `--bg-dark`: Change the radial gradient to `linear-gradient` for a flat look.
+### B. Theme Variables
+Modify the `:root` variables to change the global color scheme:
+*   `--primary`: Accent color for badges and buttons (currently Blue).
+*   `--bg-dark`: The core background depth.
+*   `--glass-border`: The subtle stroke around cards.
 
 ---
 
 ## 6. TypeScript Enforcement (`src/types.ts`)
-If you add new properties to your guides (like `author`, `dateAdded`, or `tags`), you **must** update the Interface:
+This project enforces strict typing. If you add new properties to your guides (e.g., `date_uploaded`), you **must** update the interface:
 
 ```typescript
 export interface Guide {
@@ -123,27 +118,30 @@ export interface Guide {
   level: string;
   name: string;
   url: string;
-  author?: string; // The '?' means it is optional
-  tags: string[];  // An array of strings
+  date_uploaded?: string; // Optional field
 }
 ```
 
 ---
 
 ## 7. Build and Deployment Pipeline
-1.  **Code Check:** Run `npm run type-check` to ensure no TypeScript errors exist.
-2.  **Minification:** Run `npm run build`. Vite will perform "Tree Shaking"—it removes any code you aren't using to make the `dist` folder as tiny as possible.
-3.  **Environment Variables:** If you have secret keys, create a `.env` file in the root and use `import.meta.env.VITE_KEY_NAME` to access them.
+1.  **Development:** `npm run dev`
+2.  **Linting/Type Check:** `npm run build` (Vite will automatically flag TS errors).
+3.  **Production:** The `dist/` folder generated by `npm run build` is a standalone static site. 
+4.  **Base Path:** If deploying to a subdirectory, update `base: './'` in `vite.config.ts`.
 
 ---
 
-## 8. Troubleshooting for New Devs
-*   **Problem:** Images/PDFs not loading.
-    *   *Solution:* Ensure they are in `/public`. Paths in the code should **not** include the word `public`. Use `/guides/file.pdf`, not `./public/guides/file.pdf`.
-*   **Problem:** The Spotlight (Mouse follow) is laggy.
-    *   *Solution:* Check `style.css` for `will-change: transform;`. This tells the GPU to pre-render the movement.
-*   **Problem:** Search doesn't find anything.
-    *   *Solution:* Ensure `v-model="query"` is correctly linked to the `<input>` and that the `computed` property is actually using `query.value`.
+## 8. Troubleshooting for Contributors
+*   **Problem:** Files in `/public/guides/` are not opening.
+    *   *Solution:* Paths in `guides.ts` must be absolute from the root (e.g., `/guides/file.pdf`). Do **not** include the word `public` in the URL string.
+*   **Problem:** Spotlight effect is not appearing.
+    *   *Solution:* Ensure you haven't removed the `@mousemove` listener from the `.bg-scene` div in `App.vue`.
+*   **Problem:** Search is case-sensitive.
+    *   *Solution:* Always wrap your search comparison in `.toLowerCase()` as seen in the `filteredGuides` computed property.
 
 ---
-*This hub is built to be modular. When in doubt, follow the pattern of creating a Reactive State (`ref`) and letting the Template (`v-if` / `v-for`) respond to it.*
+*This hub is built for SHSID students. Maintain its modularity by keeping data in the `/data` folder and styles in the design system.*
+
+Github maintained : @Ziqian-Huang0607
+Contact: Mlfusion@outloook.com
