@@ -1,17 +1,6 @@
-// src/types.ts
-export interface Guide {
-  year: string;
-  subject: string;
-  level: string;
-  name: string;
-  url: string;
-  grade?: number; // Added the '?' to make it optional
-}
+import { createApp } from 'vue'
+import App from './App.vue'
 
-export interface ExternalLink {
-  name: string;
-  url: string;
-  category: string;
-  description: string;
-  color: string;
-}
+// Do NOT import style.css here if it's imported in App.vue
+const app = createApp(App)
+app.mount('#app')
