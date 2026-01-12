@@ -187,7 +187,12 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
       </nav>
 
       <section class="hero">
-        <h1 class="title-gradient">Academic Resources</h1>
+        <!-- New Logo Icon added next to Academic Resources -->
+        <div class="hero-title-container">
+          <img src="/idx-logo1.png" class="hero-title-icon" alt="Title Icon" />
+          <h1 class="title-gradient">Academic Resources</h1>
+        </div>
+        
         <div class="search-wrapper">
           <input 
             v-model="query" 
@@ -297,7 +302,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 
   <footer class="main-footer">
     <div class="footer-content">
-      <p>&copy; 2024 IDX ACADEMIC SUPPORT HUB</p>
+      <p>&copy; 2026 IDX ACADEMIC SUPPORT HUB</p>
       <div class="footer-links">
         <a href="https://gpa.indexademics.com">GPA</a>
         <span class="footer-dot">•</span>
@@ -308,6 +313,24 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 </template>
 
 <style scoped>
+/* HERO TITLE ALIGNMENT */
+.hero-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 5px;
+}
+
+.hero-title-icon {
+  height: 48px;
+  width: auto;
+  filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4));
+  animation: float 3s ease-in-out infinite;
+  position: relative;
+  top: 3px; /* Moved exactly 3px down */
+}
+
 /* PROMO GRID (Dual Propaganda) */
 .promo-grid {
   display: grid;
@@ -367,8 +390,13 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 
 /* BRANDING & LOGO */
 .header-left { display: flex; align-items: center; gap: 12px; }
-.header-logo { height: 32px; width: auto; transition: transform 0.3s ease; position: relative;
-  top: -2px; }
+.header-logo { 
+  height: 32px; 
+  width: auto; 
+  transition: transform 0.3s ease; 
+  position: relative;
+  top: -2px; /* Kept your old code position */
+}
 .header-left:hover .header-logo { transform: rotate(-5deg) scale(1.1); }
 
 /* TEXT EFFECTS */
@@ -482,7 +510,14 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 
 .footer-dot { color: #475569; font-size: 10px; }
 
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
 @media (max-width: 800px) {
   .promo-grid { grid-template-columns: 1fr; }
+  .hero-title-container { flex-direction: column; }
 }
 </style>
