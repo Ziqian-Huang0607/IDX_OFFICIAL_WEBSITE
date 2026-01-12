@@ -3,32 +3,30 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { externalLinks } from './data/links' 
 import './assets/style.css'
 
-/** 
- * 1. THE AUTO-LOADER
- * Scans the guides directory for all files
- */
+// 1. THE AUTO-LOADER (With TypeScript Safety)
 const modules = import.meta.glob('./guides/**/*.*', { eager: true, as: 'url' })
 
 const allGuides = Object.keys(modules).map((path) => {
   const parts = path.split('/')
   const guidesIndex = parts.indexOf('guides')
   
-  const year = parts[guidesIndex + 1]
-  const subject = parts[guidesIndex + 2]
-  const level = parts[guidesIndex + 3]
-  const fileName = parts[parts.length - 1]
-  const cleanName = fileName.split('.')[0].replace(/_/g, ' ')
+  // Adding "|| ''" ensures these are always strings, never undefined
+  const year = parts[guidesIndex + 1] || 'Unknown'
+  const subject = parts[guidesIndex + 2] || 'General'
+  const level = parts[guidesIndex + 3] || 'S'
+  const fileName = parts[parts.length - 1] || 'Untitled'
+  const cleanName = fileName.split('.')[0]?.replace(/_/g, ' ') || 'Untitled'
 
   return {
     year,
     subject,
     level,
     name: cleanName,
-    url: (modules[path] as any).default || modules[path]
+    url: (modules[path] as any).default || (modules[path] as string) || ''
   }
 })
 
-// Automatically detect all years found in folders
+// Ensure year is always a string for sorting
 const availableYears = [...new Set(allGuides.map(g => g.year))].sort()
 
 // 2. Navigation & Filter State

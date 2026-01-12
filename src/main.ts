@@ -1,5 +1,17 @@
-import { createApp } from 'vue'
-import './assets/style.css'
-import App from './App.vue'
+// src/types.ts
+export interface Guide {
+  year: string;
+  subject: string;
+  level: string;
+  name: string;
+  url: string;
+  grade?: number; // Added the '?' to make it optional
+}
 
-createApp(App).mount('#app')
+export interface ExternalLink {
+  name: string;
+  url: string;
+  category: string;
+  description: string;
+  color: string;
+}
