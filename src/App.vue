@@ -12,10 +12,10 @@ const allGuides = Object.keys(modules).map((path) => {
     const parts = path.split('/')
     const guidesIndex = parts.indexOf('guides')
     
-    // Fallback logic to ensure TypeScript doesn't crash on Vercel
-    const year = parts[guidesIndex + 1] || 'Misc'
-    const subject = parts[guidesIndex + 2] || 'General'
-    const level = parts[guidesIndex + 3] || 'S'
+    // Using .trim() to prevent hidden spaces in folder names from breaking filters
+    const year = (parts[guidesIndex + 1] || 'Misc').trim()
+    const subject = (parts[guidesIndex + 2] || 'General').trim()
+    const level = (parts[guidesIndex + 3] || 'S').trim()
     const fileName = parts[parts.length - 1] || 'Untitled'
     const cleanName = fileName.split('.')[0]?.replace(/_/g, ' ') || fileName
 
@@ -54,24 +54,52 @@ const quickTools = [
   { name: 'GeoGebra', url: 'https://www.geogebra.org/graphing', icon: '📐' }
 ]
 
-// 3. FILTERING & SORTING LOGIC
+// 3. FILTERING & SORTING LOGIC (CASE-INSENSITIVE)
 const filteredGuides = computed(() => {
   return allGuides.filter(g => {
     if (!g) return false
-    const sMatch = activeSub.value === 'All' || g.subject === activeSub.value
-    const yMatch = activeYear.value === 'All' || g.year === activeYear.value
-    const qMatch = g.name.toLowerCase().includes(query.value.toLowerCase()) ||
-                   g.subject.toLowerCase().includes(query.value.toLowerCase())
+
+    // Normalize everything to lowercase for robust matching
+    const targetSubject = activeSub.value.toLowerCase();
+    const currentSubject = g.subject.toLowerCase();
+    const targetYear = activeYear.value.toLowerCase();
+    const currentYear = g.year.toLowerCase();
+    const searchStr = query.value.toLowerCase();
+
+    // Subject Match
+    const sMatch = activeSub.value === 'All' || currentSubject === targetSubject
+    
+    // Year Match
+    const yMatch = activeYear.value === 'All' || currentYear === targetYear
+    
+    // Search Match
+    const qMatch = g.name.toLowerCase().includes(searchStr) ||
+                   currentSubject.includes(searchStr)
+
     return sMatch && yMatch && qMatch
   })
 })
 
 const getByYear = (year: string) => {
-  const inYear = filteredGuides.value.filter(g => g!.year === year)
-  const uniqueSubs = [...new Set(inYear.map(i => i!.subject))].sort()
-  return uniqueSubs.map(s => ({ 
-    name: s, 
-    files: inYear.filter(f => f!.subject === s) 
+  // Use trim and lowerCase to find data for specific Class Header
+  const inYear = filteredGuides.value.filter(g => g!.year.toLowerCase().trim() === year.toLowerCase().trim())
+  
+  // Group by subject case-insensitively so "biology" and "Biology" merge
+  const subjectMap = new Map();
+  
+  inYear.forEach(file => {
+    // Standardize display name (e.g. biology -> Biology)
+    const displayName = file!.subject.charAt(0).toUpperCase() + file!.subject.slice(1).toLowerCase();
+    
+    if (!subjectMap.has(displayName)) {
+      subjectMap.set(displayName, []);
+    }
+    subjectMap.get(displayName).push(file);
+  });
+
+  return Array.from(subjectMap.keys()).sort().map(name => ({ 
+    name, 
+    files: subjectMap.get(name) 
   }))
 }
 
@@ -183,16 +211,28 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
         </div>
       </section>
 
-      <!-- FEATURED: GPA PROPAGANDA -->
-      <section class="featured-promotion">
-        <div class="glass-card promo-card">
-          <div class="promo-content">
-            <div class="promo-tag">Recommended Tool</div>
-            <h2>GPA Calculator</h2>
-            <p>Calculate your GPA using the fast and secure SHSID weighting logic. Privacy-first design.</p>
-            <a href="https://gpa.indexademics.com" target="_blank" class="promo-button">Launch Calculator →</a>
+      <!-- DUAL PROPAGANDA SECTION (Shared Space) -->
+      <section class="promo-grid">
+        <!-- GPA Promotion -->
+        <div class="glass-card promo-mini gpa-bg">
+          <div class="promo-content-mini">
+            <div class="promo-badge gold">SHSID Tool</div>
+            <h3>GPA Calculator</h3>
+            <p>Fast, secure SHSID weighting.</p>
+            <a href="https://gpa.indexademics.com" target="_blank" class="promo-btn-mini">Launch →</a>
           </div>
-          <div class="promo-visual">📈</div>
+          <div class="promo-icon-mini">📈</div>
+        </div>
+
+        <!-- AI Consultant Promotion -->
+        <div class="glass-card promo-mini ai-bg">
+          <div class="promo-content-mini">
+            <div class="promo-badge blue">New: Arcana</div>
+            <h3>AI Consultant</h3>
+            <p>Your SHSID academic advisor.</p>
+            <a href="https://indexademics-arcana.streamlit.app" target="_blank" class="promo-btn-mini">Start Chat →</a>
+          </div>
+          <div class="promo-icon-mini">🤖</div>
         </div>
       </section>
 
@@ -259,15 +299,48 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
     <div class="footer-content">
       <p>&copy; 2024 IDX ACADEMIC SUPPORT HUB</p>
       <div class="footer-links">
-        <a href="https://gpa.indexademics.com">GPA CALCULATOR</a>
+        <a href="https://gpa.indexademics.com">GPA</a>
         <span class="footer-dot">•</span>
-        <a href="https://indexademics-arcana.streamlit.app">AI CONSULTANT</a>
+        <a href="https://indexademics-arcana.streamlit.app">AI</a>
       </div>
     </div>
   </footer>
 </template>
 
 <style scoped>
+/* PROMO GRID (Dual Propaganda) */
+.promo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.promo-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px !important;
+  border-radius: 20px;
+  transition: transform 0.3s ease;
+}
+
+.promo-mini:hover { transform: translateY(-5px); }
+
+.gpa-bg { border-color: rgba(251, 191, 36, 0.3); background: linear-gradient(135deg, rgba(251,191,36,0.05), transparent); }
+.ai-bg { border-color: rgba(59, 130, 246, 0.3); background: linear-gradient(135deg, rgba(59,130,246,0.05), transparent); }
+
+.promo-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+.gold { background: #fbbf24; color: #000; }
+.blue { background: #3b82f6; color: #fff; }
+
+.promo-content-mini h3 { margin: 0 0 5px 0; font-size: 1.2rem; }
+.promo-content-mini p { margin: 0 0 15px 0; font-size: 0.85rem; color: #94a3b8; }
+
+.promo-btn-mini { font-size: 11px; font-weight: 800; text-decoration: none; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 15px; border-radius: 8px; transition: 0.2s; }
+.promo-btn-mini:hover { background: #fff; color: #000; }
+.promo-icon-mini { font-size: 40px; opacity: 0.8; }
+
 /* VIEW ANIMATIONS */
 .view-animate {
   animation: fadeIn 0.5s ease-out;
@@ -407,4 +480,8 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 }
 
 .footer-dot { color: #475569; font-size: 10px; }
+
+@media (max-width: 800px) {
+  .promo-grid { grid-template-columns: 1fr; }
+}
 </style>
