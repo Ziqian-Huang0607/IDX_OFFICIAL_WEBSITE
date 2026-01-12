@@ -1,3 +1,6 @@
+//deprecated jan 12 2026
+
+
 import type { Guide } from '../types'
 
 export const guideData: Guide[] = [

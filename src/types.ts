@@ -1,7 +1,15 @@
 export interface Guide {
-  grade: number;
+  year: string;
   subject: string;
-  level: 'S' | 'S+' | 'H' | 'AP' | 'IB'; // Strict levels
+  level: string;
   name: string;
-  url: string; // The link to the file in /public/guides/
+  url: string;
+}
+
+export interface ExternalLink {
+  name: string;
+  url: string;
+  category: string;
+  description: string;
+  color: string;
 }
