@@ -367,7 +367,8 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 
 /* BRANDING & LOGO */
 .header-left { display: flex; align-items: center; gap: 12px; }
-.header-logo { height: 32px; width: auto; transition: transform 0.3s ease; }
+.header-logo { height: 32px; width: auto; transition: transform 0.3s ease; position: relative;
+  top: -2px; }
 .header-left:hover .header-logo { transform: rotate(-5deg) scale(1.1); }
 
 /* TEXT EFFECTS */
