@@ -40,7 +40,7 @@ const currentView = ref('hub') // 'hub' or 'toolbox'
 const activeSub = ref('All')
 const activeYear = ref('All') 
 const query = ref('')
-
+const showBanner = ref(true) // advertise banner
 // Constants for UI
 const subjects = [
   'All', 'Biology', 'Chemistry', 'Physics', 'Mathematics', 
@@ -51,7 +51,8 @@ const quickTools = [
   { name: 'GPA Calculator', url: 'https://gpa.indexademics.com', icon: '✨' },
   { name: 'AI Consultant', url: 'https://indexademics-arcana.streamlit.app', icon: '🤖' },
   { name: 'Desmos', url: 'https://www.desmos.com/calculator', icon: '📉' },
-  { name: 'GeoGebra', url: 'https://www.geogebra.org/graphing', icon: '📐' }
+  { name: 'GeoGebra', url: 'https://www.geogebra.org/graphing', icon: '📐' },
+  { name: 'CC Advisor', url: 'https://cc.indexademics.com/', icon: '📝' }
 ]
 
 // 3. FILTERING & SORTING LOGIC (CASE-INSENSITIVE)
@@ -148,6 +149,17 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
       </button>
     </div>
   </header>
+  <!-- ANNOUNCEMENT BANNER -->
+  <div v-if="showBanner" class="announcement-banner">
+    <div class="banner-content">
+      <span class="banner-badge">NEW</span>
+      <span class="banner-text">
+        Meet your ultimate College Selection tool: <strong>CC Advisor</strong> is now live!
+      </span>
+      <a href="https://cc.indexademics.com/" target="_blank" class="banner-link">Try it now &rarr;</a>
+    </div>
+    <button @click="showBanner = false" class="banner-close" aria-label="Close">&times;</button>
+  </div>
 
   <!-- MAIN APP VIEW -->
   <main class="content-container">
@@ -519,5 +531,100 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 @media (max-width: 800px) {
   .promo-grid { grid-template-columns: 1fr; }
   .hero-title-container { flex-direction: column; }
+
+}
+/* =========================================
+   ANNOUNCEMENT BANNER
+   ========================================= */
+.announcement-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Smooth purple to blue gradient matching the Arcana/Toolbox vibe */
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 12px 40px;
+  position: relative;
+  z-index: 40;
+  animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.banner-badge {
+  background: #3b82f6;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.banner-text {
+  color: #e2e8f0;
+  letter-spacing: 0.3px;
+}
+
+.banner-text strong {
+  color: #fff;
+}
+
+.banner-link {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid #3b82f6;
+  padding-bottom: 1px;
+  transition: all 0.2s ease;
+}
+
+.banner-link:hover {
+  color: #3b82f6;
+  border-bottom-color: transparent;
+}
+
+.banner-close {
+  position: absolute;
+  right: 20px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0 5px;
+}
+
+.banner-close:hover {
+  color: #fff;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Make it stack nicely on mobile screens */
+@media (max-width: 600px) {
+  .banner-content {
+    gap: 8px;
+    padding-right: 20px; /* Room for the X button */
+  }
+  .banner-text {
+    text-align: center;
+    font-size: 0.85rem;
+  }
 }
 </style>

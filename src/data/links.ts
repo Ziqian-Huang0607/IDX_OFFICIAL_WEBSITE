@@ -35,5 +35,12 @@ export const externalLinks: ExternalResource[] = [
     category: 'General',
     url: 'https://quizlet.com',
     color: '#4257b2'
+  },
+  {
+    name: 'IDX SHSID CC Advisor',
+    description: 'IDX powered tool for course selection.',
+    category: 'All Subjects',
+    url: 'https://cc.indexademics.com/',
+    color: '#061971'
   }
 ];
