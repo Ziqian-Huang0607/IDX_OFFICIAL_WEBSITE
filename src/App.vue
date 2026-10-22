@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { externalLinks } from './data/links' 
+import { ref, computed, onMounted, onUnmounted, type CSSProperties } from 'vue'
+import { externalLinks, ecosystemTools } from './data/links' 
 import './assets/style.css'
 
 // 1. THE AUTO-LOADER (THE ENGINE)
@@ -36,7 +36,7 @@ const allGuides = Object.keys(modules).map((path) => {
 const availableYears = [...new Set(allGuides.map(g => g!.year))].sort()
 
 // 2. STATE MANAGEMENT
-const currentView = ref('hub') // 'hub' or 'toolbox'
+const currentView = ref('hub') // 'hub' | 'archive' | 'upcoming' | 'toolbox'
 const activeSub = ref('All')
 const activeYear = ref('All') 
 const query = ref('')
@@ -48,14 +48,27 @@ const subjects = [
 ]
 
 const quickTools = [
-  { name: 'GPA Calculator', url: 'https://gpa.indexademics.com', icon: '✨' },
   { name: 'AI Consultant', url: 'https://indexademics-arcana.streamlit.app', icon: '🤖' },
   { name: 'Desmos', url: 'https://www.desmos.com/calculator', icon: '📉' },
   { name: 'GeoGebra', url: 'https://www.geogebra.org/graphing', icon: '📐' },
   { name: 'CC Advisor', url: 'https://cc.indexademics.com/', icon: '📝' }
 ]
 
-// 3. FILTERING & SORTING LOGIC (CASE-INSENSITIVE)
+// Ecosystem cards with precomputed glow styles (accent color per tool)
+// and normalized action buttons (a tool may expose multiple links)
+const ecoCards = ecosystemTools.map(tool => ({
+  ...tool,
+  glowStyle: { '--eco-accent': tool.accent } as CSSProperties,
+  actions: tool.links ?? [{ label: 'Open Site ↗', url: tool.url }]
+}))
+
+// 3. VIEW NAVIGATION
+const goView = (view: string) => {
+  currentView.value = view
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// 4. FILTERING & SORTING LOGIC (CASE-INSENSITIVE)
 const filteredGuides = computed(() => {
   return allGuides.filter(g => {
     if (!g) return false
@@ -104,7 +117,7 @@ const getByYear = (year: string) => {
   }))
 }
 
-// 4. INTERACTIVE FX (Spotlight & Animations)
+// 5. INTERACTIVE FX (Spotlight & Animations)
 const spotlightPos = ref({ x: 0, y: 0 })
 const handleMouseMove = (e: MouseEvent) => {
   spotlightPos.value = { x: e.clientX, y: e.clientY }
@@ -129,20 +142,32 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
   </div>
 
   <header class="glass-header">
-    <div class="header-left" @click="currentView = 'hub'" style="cursor:pointer">
+    <div class="header-left" @click="goView('hub')" style="cursor:pointer">
       <img src="/idx-logo.png" alt="IDX Logo" class="header-logo" />
       <div class="logo-text gradient-text">IDX HUB</div>
     </div>
     
     <div class="header-nav">
       <button 
-        @click="currentView = 'hub'" 
+        @click="goView('hub')" 
         :class="['nav-btn', { active: currentView === 'hub' }]"
       >
         Study Hub
       </button>
       <button 
-        @click="currentView = 'toolbox'" 
+        @click="goView('archive')" 
+        :class="['nav-btn', { active: currentView === 'archive' }]"
+      >
+        Archive
+      </button>
+      <button 
+        @click="goView('upcoming')" 
+        :class="['nav-btn', { active: currentView === 'upcoming' }]"
+      >
+        What's Coming Up
+      </button>
+      <button 
+        @click="goView('toolbox')" 
         :class="['nav-btn', { active: currentView === 'toolbox' }]"
       >
         Toolbox
@@ -164,8 +189,90 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
   <!-- MAIN APP VIEW -->
   <main class="content-container">
     
-    <!-- VIEW: STUDY HUB -->
+    <!-- VIEW: STUDY HUB (HOME) -->
     <div v-if="currentView === 'hub'" class="view-animate">
+      <section class="hero">
+        <!-- New Logo Icon added next to Academic Resources -->
+        <div class="hero-title-container">
+          <img src="/idx-logo1.png" class="hero-title-icon" alt="Title Icon" />
+          <h1 class="title-gradient">Academic Resources</h1>
+        </div>
+        <p class="hero-subtitle">
+          Study guides and the GPA Calculator have moved to the
+          <a class="inline-link" @click="goView('archive')">Archive</a>.
+          Check out the latest tools from IDX &amp; PA Tech below.
+        </p>
+        
+        <!-- QUICK TOOLS BAR -->
+        <div class="quick-tools-bar">
+          <a 
+            v-for="tool in quickTools" 
+            :key="tool.name" 
+            :href="tool.url" 
+            target="_blank" 
+            class="tool-tag"
+          >
+            <span class="tool-icon">{{ tool.icon }}</span> {{ tool.name }}
+          </a>
+        </div>
+      </section>
+
+      <!-- LATEST TOOLS (IDX & PA TECH ECOSYSTEM) -->
+      <div class="grade-label">Latest Tools</div>
+      <div class="card-grid">
+        <div 
+          v-for="tool in ecoCards" 
+          :key="tool.name" 
+          class="glass-card eco-card"
+          :style="tool.glowStyle"
+        >
+          <div class="eco-head">
+            <div class="eco-icon">{{ tool.icon }}</div>
+            <div class="eco-head-right">
+              <span class="eco-new">New</span>
+              <img 
+                v-if="tool.makerLogo" 
+                :src="tool.makerLogo" 
+                :alt="tool.maker" 
+                :title="tool.maker" 
+                class="eco-maker-logo" 
+              />
+              <span v-else class="eco-maker">{{ tool.maker }}</span>
+            </div>
+          </div>
+          <div class="eco-tagline">{{ tool.tagline }}</div>
+          <h3 class="eco-name">{{ tool.name }}</h3>
+          <p class="eco-desc">{{ tool.description }}</p>
+          <div class="eco-actions">
+            <a 
+              v-for="action in tool.actions" 
+              :key="action.label" 
+              :href="action.url" 
+              target="_blank" 
+              :class="['eco-btn', { primary: action.primary }]"
+            >
+              {{ action.label }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CC ADVISOR PROMOTION -->
+      <section class="promo-grid single">
+        <div class="glass-card promo-mini ai-bg">
+          <div class="promo-content-mini">
+            <div class="promo-badge blue">IDX Tool</div>
+            <h3>CC Advisor</h3>
+            <p>Your ultimate college selection tool.</p>
+            <a href="https://cc.indexademics.com/" target="_blank" class="promo-btn-mini">Launch →</a>
+          </div>
+          <div class="promo-icon-mini">📝</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- VIEW: ARCHIVE (STUDY GUIDES + GPA CALCULATOR) -->
+    <div v-else-if="currentView === 'archive'" class="view-animate">
       
       <!-- NAVIGATION: Subject Filters -->
       <nav class="filter-nav">
@@ -199,11 +306,8 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
       </nav>
 
       <section class="hero">
-        <!-- New Logo Icon added next to Academic Resources -->
-        <div class="hero-title-container">
-          <img src="/idx-logo1.png" class="hero-title-icon" alt="Title Icon" />
-          <h1 class="title-gradient">Academic Resources</h1>
-        </div>
+        <h1 class="title-gradient">The Archive</h1>
+        <p class="hero-subtitle">Every IDX study guide, sorted by class and subject.</p>
         
         <div class="search-wrapper">
           <input 
@@ -213,24 +317,10 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
             placeholder="Search topics, subjects, or levels..."
           >
         </div>
-        
-        <!-- QUICK TOOLS BAR -->
-        <div class="quick-tools-bar">
-          <a 
-            v-for="tool in quickTools" 
-            :key="tool.name" 
-            :href="tool.url" 
-            target="_blank" 
-            class="tool-tag"
-          >
-            <span class="tool-icon">{{ tool.icon }}</span> {{ tool.name }}
-          </a>
-        </div>
       </section>
 
-      <!-- DUAL PROPAGANDA SECTION (Shared Space) -->
+      <!-- ARCHIVE TOOLS PROMOTION -->
       <section class="promo-grid">
-        <!-- GPA Promotion -->
         <div class="glass-card promo-mini gpa-bg">
           <div class="promo-content-mini">
             <div class="promo-badge gold">SHSID Tool</div>
@@ -241,12 +331,11 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
           <div class="promo-icon-mini">📈</div>
         </div>
 
-        <!-- AI Consultant Promotion -->
         <div class="glass-card promo-mini ai-bg">
           <div class="promo-content-mini">
-            <div class="promo-badge blue">New: Arcana</div>
+            <div class="promo-badge blue">IDX Classic</div>
             <h3>AI Consultant</h3>
-            <p>Your SHSID academic advisor.</p>
+            <p>Your SHSID academic advisor — the predecessor of Synonance.</p>
             <a href="https://indexademics-arcana.streamlit.app" target="_blank" class="promo-btn-mini">Start Chat →</a>
           </div>
           <div class="promo-icon-mini">🤖</div>
@@ -277,6 +366,43 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
       <div v-if="filteredGuides.length === 0" class="empty-state">
          <div class="empty-icon">🔍</div>
          <p>No resources found for your current selection.</p>
+      </div>
+    </div>
+
+    <!-- VIEW: WHAT'S COMING UP -->
+    <div v-else-if="currentView === 'upcoming'" class="view-animate">
+      <section class="hero">
+        <h1 class="title-gradient">What's Coming Up</h1>
+        <p class="hero-subtitle">A look at what IDX is planning next.</p>
+      </section>
+
+      <div class="roadmap">
+        <div class="glass-card roadmap-card">
+          <div class="roadmap-top">
+            <span class="roadmap-icon">🧭</span>
+            <span class="roadmap-badge">In Planning</span>
+          </div>
+          <h3 class="roadmap-title">High School Planning Consultation</h3>
+          <p class="roadmap-tagline">What should I do in high school?</p>
+          <p class="roadmap-desc">
+            The new school year has just begun — but do you have a plan for high school and beyond?
+            Contact us, and we'll figure it out together. This is a service offered by Indexademics (IDX):
+            we don't expect any work from you, and there are no regular meetings.
+            Just reach out if you'd like a hand mapping out your path.
+          </p>
+        </div>
+
+        <div class="glass-card roadmap-card muted">
+          <div class="roadmap-top">
+            <span class="roadmap-icon">💡</span>
+            <span class="roadmap-badge soon">More Soon</span>
+          </div>
+          <h3 class="roadmap-title">More on the Roadmap</h3>
+          <p class="roadmap-desc">
+            We're always sketching out new tools and services for SHSID students.
+            Have an idea for what we should build next? Get in touch with the IDX team.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -313,12 +439,40 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
   </main>
 
   <footer class="main-footer">
-    <div class="footer-content">
-      <p>&copy; 2026 IDX ACADEMIC SUPPORT HUB</p>
-      <div class="footer-links">
-        <a href="https://gpa.indexademics.com">GPA</a>
-        <span class="footer-dot">•</span>
-        <a href="https://indexademics-arcana.streamlit.app">AI</a>
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="/idx-logo.png" alt="IDX Logo" class="footer-logo" />
+          <p class="footer-tagline">
+            Indexademics (IDX) — academic support and tools, built by students for SHSID.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h4>IDX Hub</h4>
+          <a @click="goView('hub')">Study Hub</a>
+          <a @click="goView('archive')">Archive</a>
+          <a @click="goView('upcoming')">What's Coming Up</a>
+          <a @click="goView('toolbox')">Toolbox</a>
+        </div>
+        <div class="footer-col">
+          <h4>IDX Tools</h4>
+          <a href="https://gpa.indexademics.com" target="_blank">GPA Calculator</a>
+          <a href="https://indexademics-arcana.streamlit.app" target="_blank">AI Consultant</a>
+          <a href="https://cc.indexademics.com/" target="_blank">CC Advisor</a>
+        </div>
+        <div class="footer-col">
+          <h4>PA Tech Ecosystem</h4>
+          <a href="https://syno.standardcas.org/" target="_blank">Synonance</a>
+          <a href="https://academy.standardcas.org" target="_blank">Academy</a>
+          <a href="https://launchpad.standardcas.org/overview" target="_blank">Launchpad</a>
+          <a href="https://study.standardcas.org/login" target="_blank">SHSID Study</a>
+          <a href="https://ss.standardcas.org/" target="_blank">SharedSpace</a>
+          <a href="https://patech.standardcas.org/access" target="_blank">PA Tech</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>Copyright &copy; 2026 Indexademics (IDX). All rights reserved.</span>
+        <span>Ecosystem built in collaboration with the PA Tech Department.</span>
       </div>
     </div>
   </footer>
@@ -343,12 +497,167 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
   top: 3px; /* Moved exactly 3px down */
 }
 
+.hero-subtitle {
+  color: #94a3b8;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
+.inline-link {
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: 0.2s;
+}
+
+.inline-link:hover {
+  border-bottom-color: var(--primary);
+}
+
+/* LATEST TOOLS (ECOSYSTEM CARDS) */
+.eco-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+}
+
+.eco-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--eco-accent), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.eco-card:hover {
+  border-color: var(--eco-accent);
+  box-shadow: 0 10px 40px -15px var(--eco-accent);
+}
+
+.eco-card:hover::before {
+  opacity: 0.12;
+}
+
+.eco-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.eco-icon {
+  font-size: 2rem;
+}
+
+.eco-maker {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+}
+
+.eco-maker-logo {
+  height: 18px;
+  width: auto;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
+}
+
+.eco-head-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.eco-new {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--eco-accent);
+  color: #fff;
+  box-shadow: 0 0 12px var(--eco-accent);
+}
+
+.eco-tagline {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--eco-accent);
+  margin-bottom: 6px;
+}
+
+.eco-name {
+  margin: 0 0 10px 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.eco-desc {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  flex-grow: 1;
+}
+
+.eco-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.eco-btn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 7px 16px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.eco-btn:hover {
+  background: #fff;
+  color: #000;
+}
+
+.eco-btn.primary {
+  background: var(--eco-accent);
+  border-color: transparent;
+}
+
+.eco-btn.primary:hover {
+  background: var(--eco-accent);
+  color: #fff;
+  filter: brightness(1.2);
+}
+
 /* PROMO GRID (Dual Propaganda) */
 .promo-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin-bottom: 40px;
+  margin-top: 40px;
+}
+
+.promo-grid.single {
+  grid-template-columns: 1fr;
 }
 
 .promo-mini {
@@ -375,6 +684,70 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 .promo-btn-mini { font-size: 11px; font-weight: 800; text-decoration: none; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 15px; border-radius: 8px; transition: 0.2s; }
 .promo-btn-mini:hover { background: #fff; color: #000; }
 .promo-icon-mini { font-size: 40px; opacity: 0.8; }
+
+/* ROADMAP (WHAT'S COMING UP) */
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 25px;
+}
+
+.roadmap-card {
+  padding: 35px !important;
+}
+
+.roadmap-card.muted {
+  opacity: 0.75;
+}
+
+.roadmap-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.roadmap-icon {
+  font-size: 2.2rem;
+}
+
+.roadmap-badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.roadmap-badge.soon {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.roadmap-title {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.roadmap-tagline {
+  margin: 0 0 15px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.roadmap-desc {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
 
 /* VIEW ANIMATIONS */
 .view-animate {
@@ -505,22 +878,71 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 }
 
 /* FOOTER */
-.footer-links {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 10px;
+.main-footer {
+  border-top: 1px solid var(--glass-border);
+  background: rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(12px);
+  padding: 55px 20px 30px;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: 40px;
+  margin-bottom: 45px;
+}
+
+.footer-logo {
+  height: 30px;
+  width: auto;
+  margin-bottom: 15px;
+}
+
+.footer-tagline {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+  max-width: 260px;
+}
+
+.footer-col h4 {
+  margin: 0 0 14px 0;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 1px;
+  color: #f1f5f9;
+  letter-spacing: 0.3px;
 }
 
-.footer-links a {
+.footer-col a {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
   text-decoration: none;
-  color: #fff;
-  font-size: 10px;
+  margin-bottom: 9px;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-.footer-dot { color: #475569; font-size: 10px; }
+.footer-col a:hover {
+  color: #fff;
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #64748b;
+  font-size: 11px;
+}
 
 @keyframes float {
   0% { transform: translateY(0px); }
@@ -531,6 +953,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 @media (max-width: 800px) {
   .promo-grid { grid-template-columns: 1fr; }
   .hero-title-container { flex-direction: column; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 30px; }
 
 }
 /* =========================================
